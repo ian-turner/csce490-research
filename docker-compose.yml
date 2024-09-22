@@ -1,0 +1,26 @@
+services:
+    backend:
+        build: ./backend
+        ports:
+            - 5000:5000
+        volumes:
+            - ./backend:/app:ro
+        links:
+            - mongo:mongo
+        environment:
+            FLASK_RUN_PORT: 5000
+    frontend:
+        build: ./frontend
+        ports:
+            - 4000:4000
+        volumes:
+            - ./frontend/src:/app/src:ro
+            - ./frontend/public:/app/public:ro
+        environment:
+            PORT: 4000
+    mongo:
+        image: mongo
+        ports:
+            - 27017:27017
+        volumes:
+            - ./data:/data/db:rw
