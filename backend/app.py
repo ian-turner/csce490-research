@@ -9,7 +9,7 @@ TOKEN_SIZE_BYTES = 32
 mongo = pymongo.MongoClient('mongo', 27017)
 db = mongo.appdb
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
 
 
 @app.route('/register', methods=['POST'])

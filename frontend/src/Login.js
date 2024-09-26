@@ -13,6 +13,8 @@ export default function Login() {
         // handle login request to server
         const response = await fetch(process.env.REACT_APP_API_URL + '/login', {
             method: 'POST',
+            mode: 'cors',
+            credentials: 'include',
             body: JSON.stringify({username, password}),
             headers: {
                 'Content-Type': 'application/json'
