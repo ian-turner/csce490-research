@@ -1,8 +1,12 @@
 import hashlib
+import uuid
 import pymongo
 import secrets
-from flask import Flask, request, make_response, jsonify
+from flask import Flask, request, make_response, jsonify, redirect
 from flask_cors import CORS
+from bson.json_util import dumps
+from bson.json_util import loads
+from bson.objectid import ObjectId
 
 TOKEN_SIZE_BYTES = 32
 
@@ -10,6 +14,20 @@ mongo = pymongo.MongoClient('mongo', 27017)
 db = mongo.appdb
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
+
+# https://circleci.com/blog/authentication-decorators-flask/
+def login_required(func):
+    def _func_wrapper(*args, **kwargs):
+        # checking database for authenticated user
+        auth_token = request.cookies.get('auth_token')
+        current_user = db.users.find_one({'auth_tokens': auth_token})
+        if not current_user:
+            return make_response({'message': 'Invalid credentials'}, 400)
+
+        return func(current_user, *args, **kwargs)
+
+    _func_wrapper.__name__ = func.__name__
+    return _func_wrapper
 
 
 @app.route('/register', methods=['POST'])
@@ -73,4 +91,31 @@ def login():
     res = make_response({'message': 'User authenticated'})
     res.set_cookie('auth_token', auth_token)
     return res
+
+
+@app.route('/myboards', methods=['GET'])
+@login_required
+def get_boards(current_user):
+    boards = db.boards.find({'owner': current_user['username']}, {'_id': 0})
+    return make_response({'boards': loads(dumps(boards))})
+
+
+@app.route('/newboard', methods=['POST'])
+@login_required
+def new_board(current_user):
+    new_id = str(uuid.uuid4())
+    new_board = db.boards.insert_one({'owner': current_user['username'], \
+        'notes': [], 'name': 'Untitled Board', 'id': new_id})
+    return make_response({'board_id': new_id})
+
+
+@app.route('/boards/<board_id>', methods=['GET'])
+@login_required
+def board(current_user, board_id):
+    # getting the board from the database
+    board = db.boards.find_one({'id': board_id}, {'_id': 0})
+    if board:
+        return make_response({'board': loads(dumps(board))})
+    else:
+        return make_response({'message': 'Could not retrieve board'}, 400)
 
