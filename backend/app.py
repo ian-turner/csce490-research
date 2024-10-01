@@ -104,18 +104,21 @@ def get_boards(current_user):
 @login_required
 def new_board(current_user):
     new_id = str(uuid.uuid4())
-    new_board = db.boards.insert_one({'owner': current_user['username'], \
-        'notes': [], 'name': 'Untitled Board', 'id': new_id})
+    new_board = db.boards.insert_one({'owner': current_user['username'], 'name': 'Untitled Board', 'id': new_id})
     return make_response({'board_id': new_id})
 
 
-@app.route('/boards/<board_id>', methods=['GET'])
+@app.route('/boards/<board_id>', methods=['GET', 'POST'])
 @login_required
 def board(current_user, board_id):
     # getting the board from the database
-    board = db.boards.find_one({'id': board_id}, {'_id': 0})
-    if board:
-        return make_response({'board': loads(dumps(board))})
+    if request.method == 'GET':
+        board = db.boards.find_one({'id': board_id}, {'_id': 0})
+        if board:
+            return make_response({'board': loads(dumps(board))})
+        else:
+            return make_response({'message': 'Could not retrieve board'}, 400)
     else:
-        return make_response({'message': 'Could not retrieve board'}, 400)
-
+        data = request.get_json()
+        db.boards.update_one({'id': board_id}, {'$set': data['board']})
+        return make_response({'message': 'Successfully updated board'})

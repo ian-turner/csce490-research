@@ -4,55 +4,100 @@ import { fetchAPI, postAPI } from './api.js';
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from 'uuid';
 
-import Note from './Note.js';
-
 
 export default function Board() {
     const { uuid }  = useParams();
     const [board, setBoard] = useState({});
     const [notes, setNotes] = useState([]);
 
-    function handleClick(event) {
+    async function handleClick(event) {
         // double click
         if (event.detail === 2) {
             // creating a new note
-            const newNote = {body: '', x: event.clientX, y: event.clientY, id: uuidv4()};
+            const newNote = {id: uuidv4(), body: '', x: event.clientX, y: event.clientY};
             setNotes([...notes, newNote]);
         }
     }
 
-    function handleNoteUpdate(i) {
-        function handler(event) {
-            setNotes(notes.map((note, j) => {
-                if (i != j)
-                    return note;
+    async function getBoard() {
+        const {data, error} = await fetchAPI('/boards/' + uuid);
+        if (error) {
+            // handle error here
+        } else {
+            if (data.board) {
+                setBoard(data.board);
+                if (data.board.notes)
+                    setNotes(data.board.notes);
                 else
-                    return {...note, body: event.target.value};
-            }));
+                    setNotes([]);
+            }
         }
-        return handler;
+    }
+
+    async function handleSave(event) {
+        const apiData = JSON.parse(JSON.stringify(board));
+        apiData.notes = JSON.parse(JSON.stringify(notes));
+        const {data, error} = await postAPI('/boards/' + uuid, {board: apiData});
+        if (error) {
+            // handle error here
+            alert(error);
+        } else {
+            alert(data.message);
+        }
     }
 
     useEffect(() => {
         // getting the board data from the server
-        async function getData() {
-            const {data, error} = await fetchAPI('/boards/' + uuid);
-            if (data.board) {
-                setBoard(data.board);
-                setNotes(data.board.notes);
-            }
-        }
-        getData();
+        getBoard();
     }, []);
 
     if (board) {
         return (
             <div>
                 <div>
-                    <h3>{board.name}</h3>
+                    <input type='text' value={board.name || ''} onChange={e => setBoard({...board, name: e.target.value})}/>
+                    <div onClick={handleSave}>Save</div>
                 </div>
                 <div onClick={handleClick} style={{width: '100%', height: '100vh'}}>
-                    {notes.map((note, i) => <Note note={note} key={note.id} handleUpdate={handleNoteUpdate(i)}/>)}
+                    {notes.map(note =>
+                        <div
+                            style={{
+                                width: 300,
+                                height: 200,
+                                position: 'absolute',
+                                background: 'blue',
+                                top: note.y,
+                                left: note.x
+                            }}
+                            key={note.id}
+                        >
+                            <div
+                                style={{
+                                    width: '100%',
+                                    height: 20,
+                                }}
+                            >
+                            </div>
+                            <textarea
+                                style={{
+                                    outline: 'none',
+                                    width: '100%',
+                                    height: '100%',
+                                    resize: 'none',
+                                }}
+                                value={note.body}
+                                onClick={e => e.stopPropagation()}
+                                onChange={event => {
+                                    setNotes(notes.map(_note => {
+                                        if (note.id === _note.id)
+                                            return {..._note, body: event.target.value};
+                                        else
+                                            return _note;
+                                    }));
+                                }}
+                            ></textarea>
+                        </div>
+                    )}
                 </div>
             </div>
         );
