@@ -9,6 +9,7 @@ export default function Board() {
     const { uuid }  = useParams();
     const [board, setBoard] = useState({});
     const [notes, setNotes] = useState([]);
+    const [drag, setDrag] = useState(null);
 
     async function handleClick(event) {
         // double click
@@ -46,6 +47,27 @@ export default function Board() {
         }
     }
 
+    function handleMouseDown(event, noteId) {
+        setDrag(noteId);
+    }
+
+    function handleMouseUp(event) {
+        setDrag(null);
+    }
+
+    function handleDrag(event) {
+        if (drag) {
+            setNotes(notes.map(note => {
+                if (note.id === drag) {
+                    return {...note, x: note.x + event.movementX,
+                    y: note.y + event.movementY};
+                } else {
+                    return note;
+                }
+            }));
+        }
+    }
+
     useEffect(() => {
         // getting the board data from the server
         getBoard();
@@ -53,9 +75,10 @@ export default function Board() {
 
     if (board) {
         return (
-            <div>
+            <div onMouseMove={handleDrag} onMouseUp={handleMouseUp}>
                 <div>
-                    <input type='text' value={board.name || ''} onChange={e => setBoard({...board, name: e.target.value})}/>
+                    <input type='text' value={board.name || ''} onChange={e => 
+                        setBoard({...board, name: e.target.value})}/>
                     <div onClick={handleSave}>Save</div>
                 </div>
                 <div onClick={handleClick} style={{width: '100%', height: '100vh'}}>
@@ -76,6 +99,7 @@ export default function Board() {
                                     width: '100%',
                                     height: 20,
                                 }}
+                            onMouseDown={event => handleMouseDown(event, note.id.slice(0))}
                             >
                             </div>
                             <textarea
