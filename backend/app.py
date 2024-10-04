@@ -50,12 +50,11 @@ def register():
     _hash.update(password.encode())
     hashed_password = _hash.hexdigest()
 
-    # inserting into database
-    new_user = db.users.insert_one({'username': username, 'hashed_password': hashed_password})
-
     # creating an authentication token
     auth_token = secrets.token_hex(TOKEN_SIZE_BYTES)
-    db.users.update_one({'_id': new_user.inserted_id}, {'$push': {'auth_tokens': auth_token}})
+
+    # inserting into database
+    new_user = db.users.insert_one({'username': username, 'hashed_password': hashed_password, 'auth_tokens': [auth_token]})
 
     # returning result to user
     res = make_response({'message': 'User registered'}, 200)

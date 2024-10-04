@@ -92,15 +92,13 @@ export default function Board() {
                                 top: note.y,
                                 left: note.x
                             }}
-                            key={note.id}
-                        >
+                            key={note.id}>
                             <div
                                 style={{
                                     width: '100%',
                                     height: 20,
                                 }}
-                            onMouseDown={event => handleMouseDown(event, note.id.slice(0))}
-                            >
+                            onMouseDown={event => handleMouseDown(event, note.id.slice(0))}>
                             </div>
                             <textarea
                                 style={{
@@ -119,12 +117,7 @@ export default function Board() {
                                             return _note;
                                     }));
                                 }}
-                            ></textarea>
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
+                            ></textarea></div>)}</div></div>);
     } else {
         return (
             <h1>Loading</h1>
